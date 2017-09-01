@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fnproject.fn.api.Headers;
 import com.fnproject.fn.api.cloudthreads.*;
+import com.jayway.jsonpath.JsonPath;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -17,6 +18,33 @@ public class States {
         CloudThreadRuntime rt = CloudThreads.currentRuntime();
         StateMachine.State state = stateMachine.states.get(stateMachine.currentState);
         switch(state.type) {
+            case "Pass":
+                if(state.end != null && state.end) {
+                    return rt.completedValue(stateMachine);
+                } else {
+                    System.out.println("Transitioning from state " + stateMachine.currentState + " to state " + state.next);
+
+                    if (state.next != null) stateMachine.currentState = state.next;
+                    try {
+                        Object document = stateMachine.document;
+
+                        if(state.result != null) {
+                            if(state.resultPath != null) {
+                                String s = objectMapper.writeValueAsString(stateMachine.document);
+                                // TODO: This only updates, not sets new values, figure out why
+                                String s2 = JsonPath.parse(s).set(state.resultPath, state.result).jsonString();
+                                document = objectMapper.readValue(s2, Object.class);
+                            } else {
+                                document = state.result;
+                            }
+                        }
+
+                        stateMachine.document = document;§
+                        return rt.completedValue(stateMachine).thenCompose(States::transition);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
             case "Task":
                 HashMap<String, String> headers = new HashMap<>();
                 headers.put("Content-type", "application/json");
@@ -28,7 +56,11 @@ public class States {
                                     try {
                                         Object document = objectMapper.readValue(response.getBodyAsBytes(), Object.class);
                                         stateMachine.document = document;
-                                        if (state.next != null) stateMachine.currentState = state.next;
+
+                                        if(state.next != null) {
+                                            System.out.println("Transitioning from state " + stateMachine.currentState + " to state " + state.next);
+                                            stateMachine.currentState = state.next;
+                                        }
                                         return stateMachine;
                                     } catch (IOException e) {
                                         throw new RuntimeException(e);
