@@ -143,6 +143,8 @@ public class States {
                                 .thenApply((response) -> {
                                     try {
                                         Object document = objectMapper.readValue(response.getBodyAsBytes(), Object.class);
+
+                                        // TODO: If "ResultPath" is present, then should use this to update the document
                                         stateMachine.document = document;
 
                                         if(state.next != null) {
