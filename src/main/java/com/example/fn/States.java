@@ -19,7 +19,7 @@ public class States {
         CloudThreadRuntime rt = CloudThreads.currentRuntime();
         StateMachine.State state = stateMachine.states.get(stateMachine.currentState);
         switch(state.type) {
-            case "Suceed":
+            case "Succeed":
                 return rt.completedValue(stateMachine);
             case "Fail":
                 return rt.completedValue(stateMachine);
