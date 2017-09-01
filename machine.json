@@ -1,0 +1,30 @@
+{
+  "Comment": "Dave",
+  "StartAt": "a",
+  "States": {
+    "a": {
+      "Type": "Task",
+      "Resource": "example/increment",
+      "Next": "b"
+    },
+    "b": {
+      "Type": "Wait",
+      "Seconds": 3,
+      "Next": "c"
+    },
+    "c": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.value",
+          "NumericEquals": 10,
+          "Next": "d"
+        }
+      ],
+      "Default": "a"
+    },
+    "d": {
+        "Type": "Succeed"
+    }
+  }
+}
