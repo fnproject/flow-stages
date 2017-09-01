@@ -59,7 +59,7 @@ public class StateMachine implements Serializable{
         @JsonProperty("Timestamp")
         String waitUntilTimestamp;
         @JsonProperty("Seconds")
-        String waitForSeconds;
+        Integer waitForSeconds;
 
         // Type: Fail
         @JsonProperty("Error")

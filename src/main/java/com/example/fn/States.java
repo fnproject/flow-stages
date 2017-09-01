@@ -8,6 +8,7 @@ import com.jayway.jsonpath.JsonPath;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.concurrent.TimeUnit;
 
 public class States {
 
@@ -18,6 +19,15 @@ public class States {
         CloudThreadRuntime rt = CloudThreads.currentRuntime();
         StateMachine.State state = stateMachine.states.get(stateMachine.currentState);
         switch(state.type) {
+            case "Suceed":
+                return rt.completedValue(stateMachine);
+            case "Fail":
+                return rt.completedValue(stateMachine);
+            case "Wait":
+                if (state.next != null) stateMachine.currentState = state.next;
+                return rt.delay(state.waitForSeconds, TimeUnit.SECONDS)
+                        .thenApply(v -> stateMachine)
+                        .thenCompose(States::transition);
             case "Pass":
                 if(state.end != null && state.end) {
                     return rt.completedValue(stateMachine);
@@ -39,7 +49,7 @@ public class States {
                             }
                         }
 
-                        stateMachine.document = document;§
+                        stateMachine.document = document;
                         return rt.completedValue(stateMachine).thenCompose(States::transition);
                     } catch (IOException e) {
                         throw new RuntimeException(e);
@@ -50,7 +60,7 @@ public class States {
                 headers.put("Content-type", "application/json");
                 try {
                     byte[] bytes = objectMapper.writeValueAsBytes(stateMachine.document);
-
+                    System.out.println(new String(bytes));
                     CloudFuture<StateMachine> f = rt.invokeFunction(state.resource, HttpMethod.POST, Headers.fromMap(headers), bytes)
                                 .thenApply((response) -> {
                                     try {
