@@ -24,28 +24,38 @@ public class StateMachine implements Serializable{
     static class State implements Serializable {
         @JsonProperty("Type")
         String type;
-        @JsonProperty("Resource")
-        String resource;
-        @JsonProperty("Next")
-        String next;
         @JsonProperty("Comment")
         String comment;
+
+        // Type: Pass, Task, Wait, Parallel
+        @JsonProperty("Next")
+        String next;
         @JsonProperty("End")
         Boolean end;
+
+        // Type: Pass, Task, Choice, Wait, Succeed, Parallel
         @JsonProperty("InputPath")
         String inputPath;
         @JsonProperty("OutputPath")
         String outputPath;
+
+        // Type: Pass
         @JsonProperty("Result")
         Object result;
+
+        // Type: Task, Pass
         @JsonProperty("ResultPath")
         String resultPath;
+
+        // Type: Task, Parallel
         @JsonProperty("Retry")
         List<Retry> errorRetry;
         @JsonProperty("Catch")
         String errorCatch;
 
         // Type: Task
+        @JsonProperty("Resource")
+        String resource;
         @JsonProperty("TimeoutSeconds")
         String taskTimeoutSeconds;
         @JsonProperty("HeartbeatSeconds")
@@ -107,9 +117,9 @@ public class StateMachine implements Serializable{
         List<ChoiceRule> or;
         @JsonProperty("Not")
         ChoiceRule not;
+
         @JsonProperty("Next")
         String next;
-
         @JsonProperty("Variable")
         String variable;
     }
@@ -133,6 +143,4 @@ public class StateMachine implements Serializable{
         @JsonProperty("Next")
         String next;
     }
-
-
 }
