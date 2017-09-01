@@ -137,13 +137,14 @@ public class States {
                 HashMap<String, String> headers = new HashMap<>();
                 headers.put("Content-type", "application/json");
                 try {
+                    // TODO: If "InputPath" is present, use this to pull out the value(s) passed to the function
                     byte[] bytes = objectMapper.writeValueAsBytes(stateMachine.document);
                     System.out.println(new String(bytes));
                     CloudFuture<StateMachine> f = rt.invokeFunction(state.resource, HttpMethod.POST, Headers.fromMap(headers), bytes)
                                 .thenApply((response) -> {
                                     try {
                                         Object document = objectMapper.readValue(response.getBodyAsBytes(), Object.class);
-
+                                        // TODO: If "OutputPath" is present, use this to pull out the value from the result
                                         // TODO: If "ResultPath" is present, then should use this to update the document
                                         stateMachine.document = document;
 
