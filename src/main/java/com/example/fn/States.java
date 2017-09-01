@@ -56,6 +56,7 @@ public class States {
                     }
                 }
             case "Choice":
+                // TODO: Support timestamp comparisons, combinators, and all string equality comparisons
                 for(StateMachine.ChoiceRule rule : state.choiceRules) {
                     if(rule.numericEquals != null) {
                         Double variable = JsonPath.parse(stateMachine.document).read(rule.variable, Double.class);
