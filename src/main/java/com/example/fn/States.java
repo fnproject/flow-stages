@@ -55,6 +55,84 @@ public class States {
                         throw new RuntimeException(e);
                     }
                 }
+            case "Choice":
+                for(StateMachine.ChoiceRule rule : state.choiceRules) {
+                    if(rule.numericEquals != null) {
+                        Double variable = JsonPath.parse(stateMachine.document).read(rule.variable, Double.class);
+                        if (variable.equals(rule.numericEquals)) {
+                            if (rule.next != null) {
+                                stateMachine.currentState = rule.next;
+                                return rt.completedValue(stateMachine).thenCompose(States::transition);
+                            } else {
+                                // Shouldn't get here either :\
+                                return rt.completedValue(stateMachine);
+                            }
+                        }
+                    } else if(rule.numericGreaterThanEquals != null) {
+                        Double variable = JsonPath.parse(stateMachine.document).read(rule.variable, Double.class);
+                        if (variable >= rule.numericGreaterThanEquals) {
+                            if (rule.next != null) {
+                                stateMachine.currentState = rule.next;
+                                return rt.completedValue(stateMachine).thenCompose(States::transition);
+                            } else {
+                                // Shouldn't get here either :\
+                                return rt.completedValue(stateMachine);
+                            }
+                        }
+                    } else if(rule.numericLessThan != null) {
+                        Double variable = JsonPath.parse(stateMachine.document).read(rule.variable, Double.class);
+                        if (variable < rule.numericLessThan) {
+                            if (rule.next != null) {
+                                stateMachine.currentState = rule.next;
+                                return rt.completedValue(stateMachine).thenCompose(States::transition);
+                            } else {
+                                // Shouldn't get here either :\
+                                return rt.completedValue(stateMachine);
+                            }
+                        }
+                    } else if(rule.numericLessThanEquals != null) {
+                        Double variable = JsonPath.parse(stateMachine.document).read(rule.variable, Double.class);
+                        if (variable <= rule.numericLessThanEquals) {
+                            if (rule.next != null) {
+                                stateMachine.currentState = rule.next;
+                                return rt.completedValue(stateMachine).thenCompose(States::transition);
+                            } else {
+                                // Shouldn't get here either :\
+                                return rt.completedValue(stateMachine);
+                            }
+                        }
+                    } else if(rule.booleanEquals != null) {
+                        Boolean variable = JsonPath.parse(stateMachine.document).read(rule.variable, Boolean.class);
+                        if (variable.equals(rule.booleanEquals)) {
+                            if (rule.next != null) {
+                                stateMachine.currentState = rule.next;
+                                return rt.completedValue(stateMachine).thenCompose(States::transition);
+                            } else {
+                                // Shouldn't get here either :\
+                                return rt.completedValue(stateMachine);
+                            }
+                        }
+                    } else if(rule.stringEquals != null) {
+                        String variable = JsonPath.parse(stateMachine.document).read(rule.variable, String.class);
+                        if (variable.equals(rule.stringEquals)) {
+                            if (rule.next != null) {
+                                stateMachine.currentState = rule.next;
+                                return rt.completedValue(stateMachine).thenCompose(States::transition);
+                            } else {
+                                // Shouldn't get here either :\
+                                return rt.completedValue(stateMachine);
+                            }
+                        }
+                    }
+                }
+                if (state.choiceDefault != null) {
+                    stateMachine.currentState = state.choiceDefault;
+                    return rt.completedValue(stateMachine).thenCompose(States::transition);
+                } else {
+                    // Shouldn't get here
+                    return rt.completedValue(stateMachine);
+                }
+
             case "Task":
                 HashMap<String, String> headers = new HashMap<>();
                 headers.put("Content-type", "application/json");

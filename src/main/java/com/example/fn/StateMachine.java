@@ -53,7 +53,9 @@ public class StateMachine implements Serializable{
 
         // Type: Choice
         @JsonProperty("Choices")
-        List choiceRules;
+        List<ChoiceRule> choiceRules;
+        @JsonProperty("Default")
+        String choiceDefault;
 
         // Type: Wait
         @JsonProperty("Timestamp")
@@ -68,7 +70,7 @@ public class StateMachine implements Serializable{
         String failCause;
 
     }
-    class ChoiceRule implements Serializable {
+    static class ChoiceRule implements Serializable {
         @JsonProperty("StringEquals")
         String stringEquals;
         @JsonProperty("StringLessThan")
@@ -105,6 +107,11 @@ public class StateMachine implements Serializable{
         List<ChoiceRule> or;
         @JsonProperty("Not")
         ChoiceRule not;
+        @JsonProperty("Next")
+        String next;
+
+        @JsonProperty("Variable")
+        String variable;
     }
 
     class Retry implements Serializable {
