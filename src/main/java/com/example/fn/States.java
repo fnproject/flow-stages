@@ -18,16 +18,33 @@ public class States {
     public static CloudFuture<StateMachine> transition(StateMachine stateMachine) {
         CloudThreadRuntime rt = CloudThreads.currentRuntime();
         StateMachine.State state = stateMachine.states.get(stateMachine.currentState);
+        if (state == null) {
+            throw new RuntimeException("State should not be null");
+        }
         switch(state.type) {
             case "Succeed":
                 return rt.completedValue(stateMachine);
             case "Fail":
+                if (state.failCause == null) {
+                    throw new RuntimeException("State of type Fail must contain Cause field");
+                }
+                if (state.failError == null) {
+                    throw new RuntimeException("State of type Fail must contain Error field");
+                }
                 return rt.completedValue(stateMachine);
-            case "Wait":
-                if (state.next != null) stateMachine.currentState = state.next;
-                return rt.delay(state.waitForSeconds, TimeUnit.SECONDS)
-                        .thenApply(v -> stateMachine)
-                        .thenCompose(States::transition);
+            case "Wait": {
+                if (state.next == null && state.end == null) {
+                    throw new RuntimeException("State of type Wait must contain one of Next or End fields");
+                }
+                CloudFuture<Void> f = rt.delay(state.waitForSeconds, TimeUnit.SECONDS);
+
+                if (state.end != null && state.end) {
+                    return f.thenApply(v -> stateMachine);
+                } else {
+                    stateMachine.currentState = state.next;
+                    return f.thenApply(v -> stateMachine).thenCompose(States::transition);
+                }
+            }
             case "Pass":
                 if(state.end != null && state.end) {
                     return rt.completedValue(stateMachine);
@@ -56,73 +73,53 @@ public class States {
                     }
                 }
             case "Choice":
+
+                if (state.choiceRules == null) {
+                    throw new RuntimeException("State of type Choice must contain a Choices field");
+                }
+
                 // TODO: Support timestamp comparisons, combinators, and all string equality comparisons
                 for(StateMachine.ChoiceRule rule : state.choiceRules) {
+
+                    if (rule.next == null) {
+                        throw new RuntimeException("A Choice rule must contain Next field");
+                    }
+
                     if(rule.numericEquals != null) {
                         Double variable = JsonPath.parse(stateMachine.document).read(rule.variable, Double.class);
                         if (variable.equals(rule.numericEquals)) {
-                            if (rule.next != null) {
-                                stateMachine.currentState = rule.next;
-                                return rt.completedValue(stateMachine).thenCompose(States::transition);
-                            } else {
-                                // Shouldn't get here either :\
-                                return rt.completedValue(stateMachine);
-                            }
+                            stateMachine.currentState = rule.next;
+                            return rt.completedValue(stateMachine).thenCompose(States::transition);
                         }
                     } else if(rule.numericGreaterThanEquals != null) {
                         Double variable = JsonPath.parse(stateMachine.document).read(rule.variable, Double.class);
                         if (variable >= rule.numericGreaterThanEquals) {
-                            if (rule.next != null) {
-                                stateMachine.currentState = rule.next;
-                                return rt.completedValue(stateMachine).thenCompose(States::transition);
-                            } else {
-                                // Shouldn't get here either :\
-                                return rt.completedValue(stateMachine);
-                            }
+                            stateMachine.currentState = rule.next;
+                            return rt.completedValue(stateMachine).thenCompose(States::transition);
                         }
                     } else if(rule.numericLessThan != null) {
                         Double variable = JsonPath.parse(stateMachine.document).read(rule.variable, Double.class);
                         if (variable < rule.numericLessThan) {
-                            if (rule.next != null) {
-                                stateMachine.currentState = rule.next;
-                                return rt.completedValue(stateMachine).thenCompose(States::transition);
-                            } else {
-                                // Shouldn't get here either :\
-                                return rt.completedValue(stateMachine);
-                            }
+                            stateMachine.currentState = rule.next;
+                            return rt.completedValue(stateMachine).thenCompose(States::transition);
                         }
                     } else if(rule.numericLessThanEquals != null) {
                         Double variable = JsonPath.parse(stateMachine.document).read(rule.variable, Double.class);
                         if (variable <= rule.numericLessThanEquals) {
-                            if (rule.next != null) {
-                                stateMachine.currentState = rule.next;
-                                return rt.completedValue(stateMachine).thenCompose(States::transition);
-                            } else {
-                                // Shouldn't get here either :\
-                                return rt.completedValue(stateMachine);
-                            }
+                            stateMachine.currentState = rule.next;
+                            return rt.completedValue(stateMachine).thenCompose(States::transition);
                         }
                     } else if(rule.booleanEquals != null) {
                         Boolean variable = JsonPath.parse(stateMachine.document).read(rule.variable, Boolean.class);
                         if (variable.equals(rule.booleanEquals)) {
-                            if (rule.next != null) {
-                                stateMachine.currentState = rule.next;
-                                return rt.completedValue(stateMachine).thenCompose(States::transition);
-                            } else {
-                                // Shouldn't get here either :\
-                                return rt.completedValue(stateMachine);
-                            }
+                            stateMachine.currentState = rule.next;
+                            return rt.completedValue(stateMachine).thenCompose(States::transition);
                         }
                     } else if(rule.stringEquals != null) {
                         String variable = JsonPath.parse(stateMachine.document).read(rule.variable, String.class);
                         if (variable.equals(rule.stringEquals)) {
-                            if (rule.next != null) {
-                                stateMachine.currentState = rule.next;
-                                return rt.completedValue(stateMachine).thenCompose(States::transition);
-                            } else {
-                                // Shouldn't get here either :\
-                                return rt.completedValue(stateMachine);
-                            }
+                            stateMachine.currentState = rule.next;
+                            return rt.completedValue(stateMachine).thenCompose(States::transition);
                         }
                     }
                 }
@@ -135,6 +132,11 @@ public class States {
                 }
 
             case "Task":
+
+                if (state.next == null && state.end == null) {
+                    throw new RuntimeException("State of type Task must contain Next or End field");
+                }
+
                 HashMap<String, String> headers = new HashMap<>();
                 headers.put("Content-type", "application/json");
                 try {
