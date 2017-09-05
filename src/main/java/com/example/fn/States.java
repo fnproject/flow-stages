@@ -140,8 +140,12 @@ public class States {
                 HashMap<String, String> headers = new HashMap<>();
                 headers.put("Content-type", "application/json");
                 try {
-                    // TODO: If "InputPath" is present, use this to pull out the value(s) passed to the function
-                    byte[] bytes = objectMapper.writeValueAsBytes(stateMachine.document);
+                    Object inputDocument = stateMachine.document;
+                    if (state.inputPath != null) {
+                        String s = objectMapper.writeValueAsString(stateMachine.document);
+                        inputDocument = JsonPath.parse(s).read(state.inputPath, Object.class);
+                    }
+                    byte[] bytes = objectMapper.writeValueAsBytes(inputDocument);
                     System.out.println(new String(bytes));
                     CloudFuture<StateMachine> f = rt.invokeFunction(state.resource, HttpMethod.POST, Headers.fromMap(headers), bytes)
                                 .thenApply((response) -> {
