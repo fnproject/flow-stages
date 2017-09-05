@@ -165,7 +165,7 @@ public class States {
 
                                         // Reset all current retry attempts to zero, in case we've retried
                                         if(state.errorRetry != null) {
-                                            for (StateMachine.Retry retry : state.errorRetry) {
+                                            for (StateMachine.Retrier retry : state.errorRetry) {
                                                 retry.currentAttempts = 0;
                                             }
                                         }
@@ -182,7 +182,7 @@ public class States {
                             .exceptionally((e) -> {
                                 System.out.println("Task failed with error: " + e.getMessage());
                                 if(state.errorRetry != null) {
-                                    for(StateMachine.Retry retry : state.errorRetry) {
+                                    for(StateMachine.Retrier retry : state.errorRetry) {
                                         for(String error : retry.errorEquals) {
                                             if (error.equals("States.ALL") || error.equals(e.getMessage())) {
                                                 if (retry.currentAttempts < retry.maxAttempts) {
@@ -196,7 +196,7 @@ public class States {
                                     }
                                 }
                                 if(state.errorCatch != null) {
-                                    for(StateMachine.Catch c : state.errorCatch) {
+                                    for(StateMachine.Catcher c : state.errorCatch) {
                                         for(String error : c.errorEquals) {
                                             if (error.equals("States.ALL") || error.equals(e.getMessage())) {
                                                 System.out.println("Caught an error, transitioning");

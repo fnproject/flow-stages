@@ -49,9 +49,9 @@ public class StateMachine implements Serializable{
 
         // Type: Task, Parallel
         @JsonProperty("Retry")
-        List<Retry> errorRetry;
+        List<Retrier> errorRetry;
         @JsonProperty("Catch")
-        List<Catch> errorCatch;
+        List<Catcher> errorCatch;
 
         // Type: Task
         @JsonProperty("Resource")
@@ -124,7 +124,7 @@ public class StateMachine implements Serializable{
         String variable;
     }
 
-    static class Retry implements Serializable {
+    static class Retrier implements Serializable {
         @JsonProperty("ErrorEquals")
         List<String> errorEquals;
         @JsonProperty("IntervalSeconds")
@@ -137,7 +137,7 @@ public class StateMachine implements Serializable{
         Integer currentAttempts = 0;
     }
 
-    static class Catch implements Serializable {
+    static class Catcher implements Serializable {
         @JsonProperty("ErrorEquals")
         List<String> errorEquals;
         @JsonProperty("ResultPath")
