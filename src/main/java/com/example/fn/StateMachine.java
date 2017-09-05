@@ -124,7 +124,7 @@ public class StateMachine implements Serializable{
         String variable;
     }
 
-    class Retry implements Serializable {
+    static class Retry implements Serializable {
         @JsonProperty("ErrorEquals")
         List<String> errorEquals;
         @JsonProperty("IntervalSeconds")
@@ -133,6 +133,8 @@ public class StateMachine implements Serializable{
         Integer maxAttempts;
         @JsonProperty("BackoffRate")
         Double backoffRate;
+
+        Integer currentAttempts = 0;
     }
 
     class Catch implements Serializable {

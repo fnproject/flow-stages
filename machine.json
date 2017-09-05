@@ -4,8 +4,14 @@
   "States": {
     "a": {
       "Type": "Task",
-      "Resource": "example/increment",
-      "Next": "b"
+      "Resource": "example/incrementss",
+      "Next": "b",
+      "Retry": [
+        {
+          "ErrorEquals": ["{\"error\":{\"message\":\"Route not found\"}}\n"],
+          "MaxAttempts": 2
+        }
+      ]
     },
     "b": {
       "Type": "Wait",

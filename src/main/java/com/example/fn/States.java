@@ -155,15 +155,35 @@ public class States {
                                         // TODO: If "ResultPath" is present, then should use this to update the document
                                         stateMachine.document = document;
 
-                                        if(state.next != null) {
-                                            System.out.println("Transitioning from state " + stateMachine.currentState + " to state " + state.next);
-                                            stateMachine.currentState = state.next;
+                                        // Reset all current retry attempts to zero, in case we've retried
+                                        if(state.errorRetry != null) {
+                                            for (StateMachine.Retry retry : state.errorRetry) {
+                                                retry.currentAttempts = 0;
+                                            }
                                         }
                                         return stateMachine;
                                     } catch (IOException e) {
                                         throw new RuntimeException(e);
                                     }
-                                });
+                                })
+                            .exceptionally((e) -> {
+                                System.out.println("Task failed with error: " + e.getMessage());
+                                if(state.errorRetry != null) {
+                                    for(StateMachine.Retry retry : state.errorRetry) {
+                                        for(String error : retry.errorEquals) {
+                                            if (error.equals(e.getMessage())) {
+                                                if (retry.currentAttempts < retry.maxAttempts) {
+                                                    System.out.println(String.format("Retrying function, currentAttempts=%d, maxAttempts=%d", retry.currentAttempts, retry.maxAttempts));
+                                                    retry.currentAttempts = retry.currentAttempts + 1;
+                                                    return stateMachine;
+                                                }
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                                throw new RuntimeException("Failing state machine, as uncaught error occurred");
+                            });
                     if (state.end != null && state.end) {
                         return f;
                     } else {
