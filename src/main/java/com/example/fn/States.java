@@ -184,7 +184,7 @@ public class States {
                                 if(state.errorRetry != null) {
                                     for(StateMachine.Retry retry : state.errorRetry) {
                                         for(String error : retry.errorEquals) {
-                                            if (error.equals(e.getMessage())) {
+                                            if (error.equals("States.ALL") || error.equals(e.getMessage())) {
                                                 if (retry.currentAttempts < retry.maxAttempts) {
                                                     System.out.println(String.format("Retrying function, currentAttempts=%d, maxAttempts=%d", retry.currentAttempts, retry.maxAttempts));
                                                     retry.currentAttempts = retry.currentAttempts + 1;
@@ -198,7 +198,7 @@ public class States {
                                 if(state.errorCatch != null) {
                                     for(StateMachine.Catch c : state.errorCatch) {
                                         for(String error : c.errorEquals) {
-                                            if (error.equals(e.getMessage())) {
+                                            if (error.equals("States.ALL") || error.equals(e.getMessage())) {
                                                 System.out.println("Caught an error, transitioning");
                                                 stateMachine.currentState = c.next;
                                                 return stateMachine;
