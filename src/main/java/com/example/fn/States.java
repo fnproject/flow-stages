@@ -152,8 +152,15 @@ public class States {
                                     try {
                                         Object document = objectMapper.readValue(response.getBodyAsBytes(), Object.class);
                                         // TODO: If "OutputPath" is present, use this to pull out the value from the result
-                                        // TODO: If "ResultPath" is present, then should use this to update the document
-                                        stateMachine.document = document;
+                                        if(state.result != null) {
+                                            if(state.resultPath != null) {
+                                                String s = objectMapper.writeValueAsString(document);
+                                                String s2 = JsonPath.parse(s).set(state.resultPath, state.result).jsonString();
+                                                document = objectMapper.readValue(s2, Object.class);
+                                            } else {
+                                                document = state.result;
+                                            }
+                                        }
 
                                         // Reset all current retry attempts to zero, in case we've retried
                                         if(state.errorRetry != null) {
@@ -161,6 +168,11 @@ public class States {
                                                 retry.currentAttempts = 0;
                                             }
                                         }
+                                        stateMachine.document = document;
+
+                                        System.out.println("Transitioning from state " + stateMachine.currentState + " to state " + state.next);
+                                        stateMachine.currentState = state.next;
+
                                         return stateMachine;
                                     } catch (IOException e) {
                                         throw new RuntimeException(e);
