@@ -11,6 +11,12 @@
           "ErrorEquals": ["{\"error\":{\"message\":\"Route not found\"}}\n"],
           "MaxAttempts": 2
         }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["{\"error\":{\"message\":\"Route not found\"}}\n"],
+          "Next": "e"
+        }
       ]
     },
     "b": {
@@ -31,6 +37,11 @@
     },
     "d": {
         "Type": "Succeed"
+    },
+    "e": {
+      "Type":"Fail",
+      "Error": "Failed the state machine",
+      "Cause": "Probably an uncaught error"
     }
   }
 }

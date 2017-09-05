@@ -51,7 +51,7 @@ public class StateMachine implements Serializable{
         @JsonProperty("Retry")
         List<Retry> errorRetry;
         @JsonProperty("Catch")
-        String errorCatch;
+        List<Catch> errorCatch;
 
         // Type: Task
         @JsonProperty("Resource")
@@ -137,7 +137,7 @@ public class StateMachine implements Serializable{
         Integer currentAttempts = 0;
     }
 
-    class Catch implements Serializable {
+    static class Catch implements Serializable {
         @JsonProperty("ErrorEquals")
         List<String> errorEquals;
         @JsonProperty("ResultPath")

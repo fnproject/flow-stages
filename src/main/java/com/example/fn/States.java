@@ -31,6 +31,7 @@ public class States {
                 if (state.failError == null) {
                     throw new RuntimeException("State of type Fail must contain Error field");
                 }
+                System.out.println("Failing state machine with error " + state.failError + " and cause " + state.failCause);
                 return rt.completedValue(stateMachine);
             case "Wait": {
                 if (state.next == null && state.end == null) {
@@ -190,6 +191,17 @@ public class States {
                                                     return stateMachine;
                                                 }
                                                 break;
+                                            }
+                                        }
+                                    }
+                                }
+                                if(state.errorCatch != null) {
+                                    for(StateMachine.Catch c : state.errorCatch) {
+                                        for(String error : c.errorEquals) {
+                                            if (error.equals(e.getMessage())) {
+                                                System.out.println("Caught an error, transitioning");
+                                                stateMachine.currentState = c.next;
+                                                return stateMachine;
                                             }
                                         }
                                     }
