@@ -56,10 +56,7 @@ public class States {
         switch(rawState.type) {
             case "Choice":
                 Choice choiceState = new Choice();
-                // TODO: null check all of these
-                // Perhaps call a validate method
                 choiceState.comment = rawState.comment;
-                // Optional
                 choiceState.defaultState = rawState.choiceDefault;
                 choiceState.inputPath = rawState.inputPath;
                 choiceState.outputPath = rawState.outputPath;
@@ -78,33 +75,23 @@ public class States {
                 succeedState.outputPath = rawState.outputPath;
                 return succeedState;
             case "Fail":
-                Fail failState = new Fail();
-                failState.comment = rawState.comment;
-                if(rawState.failCause == null){
+                if(rawState.failCause == null) {
                     throw new RuntimeException("Fail state must have an Cause field");
                 }
-                failState.cause = rawState.failCause;
-                if(rawState.failError == null){
+                if(rawState.failError == null) {
                     throw new RuntimeException("Fail state must have an Error field");
                 }
-                failState.error = rawState.failError;
-                return failState;
+                return new Fail(rawState.comment, rawState.failError, rawState.failCause);
             case "Pass":
                 Pass passState = new Pass();
                 passState.comment = rawState.comment;
 
-                // Only one of these should be present
-                if (rawState.end == null && rawState.next == null) {
-                    throw new IllegalStateException("One of end or next must be defined on a Pass state");
-                }
-                if (rawState.end != null && rawState.next != null) {
-                    throw new IllegalStateException("Only one of end or next must be defined on a Pass state");
-                }
-                if(rawState.end != null) {
+                if (rawState.end != null && rawState.next == null) {
                     passState.end = rawState.end.booleanValue();
-                }
-                if(rawState.next != null) {
+                } else if (rawState.end == null && rawState.next != null) {
                     passState.next = rawState.next;
+                } else {
+                    throw new IllegalStateException("Only one of End or Next must be defined on a Pass state");
                 }
 
                 passState.inputPath = rawState.inputPath;
@@ -116,18 +103,12 @@ public class States {
                 Task taskState = new Task();
                 taskState.comment = rawState.comment;
 
-                // Only one of these should be present
-                if (rawState.end == null && rawState.next == null) {
-                    throw new IllegalStateException("One of end or next must be defined on a Task state");
-                }
-                if (rawState.end != null && rawState.next != null) {
-                    throw new IllegalStateException("Only one of end or next must be defined on a Task state");
-                }
-                if(rawState.end != null) {
+                if (rawState.end != null && rawState.next == null) {
                     taskState.end = rawState.end.booleanValue();
-                }
-                if(rawState.next != null) {
+                } else if (rawState.end == null && rawState.next != null) {
                     taskState.next = rawState.next;
+                } else {
+                    throw new IllegalStateException("Only one of End or Next must be defined on a Task state");
                 }
 
                 if(rawState.taskTimeoutSeconds != null) {
@@ -171,18 +152,12 @@ public class States {
                 Wait waitState = new Wait();
                 waitState.comment = rawState.comment;
 
-                // Only one of these should be present
-                if (rawState.end == null && rawState.next == null) {
-                    throw new IllegalStateException("One of end or next must be defined on a Wait state");
-                }
-                if (rawState.end != null && rawState.next != null) {
-                    throw new IllegalStateException("Only one of end or next must be defined on a Wait state");
-                }
-                if(rawState.end != null) {
+                if (rawState.end != null && rawState.next == null) {
                     waitState.end = rawState.end.booleanValue();
-                }
-                if(rawState.next != null) {
+                } else if (rawState.end == null && rawState.next != null) {
                     waitState.next = rawState.next;
+                } else {
+                    throw new IllegalStateException("Only one of End or Next must be defined on a Wait state");
                 }
 
                 waitState.inputPath = rawState.inputPath;
