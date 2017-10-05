@@ -1,241 +1,206 @@
 package com.example.fn;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fnproject.fn.api.Headers;
-import com.fnproject.fn.api.cloudthreads.*;
-import com.jayway.jsonpath.JsonPath;
+import com.fnproject.fn.api.flow.*;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class States {
 
-    private final CloudThreadRuntime rt = CloudThreads.currentRuntime();
+    private final Flow rt = Flows.currentFlow();
     private final static ObjectMapper objectMapper = new ObjectMapper();
 
-    public static CloudFuture<StateMachine> transition(StateMachine stateMachine) {
-        CloudThreadRuntime rt = CloudThreads.currentRuntime();
-        StateMachine.State state = stateMachine.states.get(stateMachine.currentState);
-        if (state == null) {
-            throw new RuntimeException("State should not be null");
-        }
-        switch(state.type) {
-            case "Succeed":
-                return rt.completedValue(stateMachine);
-            case "Fail":
-                if (state.failCause == null) {
-                    throw new RuntimeException("State of type Fail must contain Cause field");
-                }
-                if (state.failError == null) {
-                    throw new RuntimeException("State of type Fail must contain Error field");
-                }
-                System.out.println("Failing state machine with error " + state.failError + " and cause " + state.failCause);
-                return rt.completedValue(stateMachine);
-            case "Wait": {
-                if (state.next == null && state.end == null) {
-                    throw new RuntimeException("State of type Wait must contain one of Next or End fields");
-                }
-                CloudFuture<Void> f = rt.delay(state.waitForSeconds, TimeUnit.SECONDS);
+    public static FlowFuture<Machine> transition(Machine machine) {
 
-                if (state.end != null && state.end) {
-                    return f.thenApply(v -> stateMachine);
-                } else {
-                    stateMachine.currentState = state.next;
-                    return f.thenApply(v -> stateMachine).thenCompose(States::transition);
-                }
-            }
-            case "Pass":
-                if(state.end != null && state.end) {
-                    return rt.completedValue(stateMachine);
-                } else {
-                    System.out.println("Transitioning from state " + stateMachine.currentState + " to state " + state.next);
-
-                    if (state.next != null) stateMachine.currentState = state.next;
-                    try {
-                        Object document = stateMachine.document;
-
-                        if(state.result != null) {
-                            if(state.resultPath != null) {
-                                String s = objectMapper.writeValueAsString(stateMachine.document);
-                                // TODO: This only updates, not sets new values, figure out why
-                                String s2 = JsonPath.parse(s).set(state.resultPath, state.result).jsonString();
-                                document = objectMapper.readValue(s2, Object.class);
-                            } else {
-                                document = state.result;
-                            }
-                        }
-
-                        stateMachine.document = document;
-                        return rt.completedValue(stateMachine).thenCompose(States::transition);
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            case "Choice":
-
-                if (state.choiceRules == null) {
-                    throw new RuntimeException("State of type Choice must contain a Choices field");
-                }
-
-                // TODO: Support timestamp comparisons, combinators, and all string equality comparisons
-                for(StateMachine.ChoiceRule rule : state.choiceRules) {
-
-                    if (rule.next == null) {
-                        throw new RuntimeException("A Choice rule must contain Next field");
-                    }
-
-                    if(rule.numericEquals != null) {
-                        Double variable = JsonPath.parse(stateMachine.document).read(rule.variable, Double.class);
-                        if (variable.equals(rule.numericEquals)) {
-                            stateMachine.currentState = rule.next;
-                            return rt.completedValue(stateMachine).thenCompose(States::transition);
-                        }
-                    } else if(rule.numericGreaterThanEquals != null) {
-                        Double variable = JsonPath.parse(stateMachine.document).read(rule.variable, Double.class);
-                        if (variable >= rule.numericGreaterThanEquals) {
-                            stateMachine.currentState = rule.next;
-                            return rt.completedValue(stateMachine).thenCompose(States::transition);
-                        }
-                    } else if(rule.numericLessThan != null) {
-                        Double variable = JsonPath.parse(stateMachine.document).read(rule.variable, Double.class);
-                        if (variable < rule.numericLessThan) {
-                            stateMachine.currentState = rule.next;
-                            return rt.completedValue(stateMachine).thenCompose(States::transition);
-                        }
-                    } else if(rule.numericLessThanEquals != null) {
-                        Double variable = JsonPath.parse(stateMachine.document).read(rule.variable, Double.class);
-                        if (variable <= rule.numericLessThanEquals) {
-                            stateMachine.currentState = rule.next;
-                            return rt.completedValue(stateMachine).thenCompose(States::transition);
-                        }
-                    } else if(rule.booleanEquals != null) {
-                        Boolean variable = JsonPath.parse(stateMachine.document).read(rule.variable, Boolean.class);
-                        if (variable.equals(rule.booleanEquals)) {
-                            stateMachine.currentState = rule.next;
-                            return rt.completedValue(stateMachine).thenCompose(States::transition);
-                        }
-                    } else if(rule.stringEquals != null) {
-                        String variable = JsonPath.parse(stateMachine.document).read(rule.variable, String.class);
-                        if (variable.equals(rule.stringEquals)) {
-                            stateMachine.currentState = rule.next;
-                            return rt.completedValue(stateMachine).thenCompose(States::transition);
-                        }
-                    }
-                }
-                if (state.choiceDefault != null) {
-                    stateMachine.currentState = state.choiceDefault;
-                    return rt.completedValue(stateMachine).thenCompose(States::transition);
-                } else {
-                    // Shouldn't get here
-                    return rt.completedValue(stateMachine);
-                }
-
-            case "Task":
-
-                if (state.next == null && state.end == null) {
-                    throw new RuntimeException("State of type Task must contain Next or End field");
-                }
-
-                HashMap<String, String> headers = new HashMap<>();
-                headers.put("Content-type", "application/json");
-                try {
-                    Object inputDocument = stateMachine.document;
-                    if (state.inputPath != null) {
-                        String s = objectMapper.writeValueAsString(stateMachine.document);
-                        inputDocument = JsonPath.parse(s).read(state.inputPath, Object.class);
-                    }
-                    byte[] bytes = objectMapper.writeValueAsBytes(inputDocument);
-                    System.out.println(new String(bytes));
-                    CloudFuture<StateMachine> f = rt.invokeFunction(state.resource, HttpMethod.POST, Headers.fromMap(headers), bytes)
-                                .thenApply((response) -> {
-                                    try {
-                                        Object document = objectMapper.readValue(response.getBodyAsBytes(), Object.class);
-                                        // TODO: If "OutputPath" is present, use this to pull out the value from the result
-                                        if(state.result != null) {
-                                            if(state.resultPath != null) {
-                                                String s = objectMapper.writeValueAsString(document);
-                                                String s2 = JsonPath.parse(s).set(state.resultPath, state.result).jsonString();
-                                                document = objectMapper.readValue(s2, Object.class);
-                                            } else {
-                                                document = state.result;
-                                            }
-                                        }
-
-                                        // Reset all current retry attempts to zero, in case we've retried
-                                        if(state.errorRetry != null) {
-                                            for (StateMachine.Retrier retry : state.errorRetry) {
-                                                retry.currentAttempts = 0;
-                                            }
-                                        }
-                                        stateMachine.document = document;
-
-                                        System.out.println("Transitioning from state " + stateMachine.currentState + " to state " + state.next);
-                                        stateMachine.currentState = state.next;
-
-                                        return stateMachine;
-                                    } catch (IOException e) {
-                                        throw new RuntimeException(e);
-                                    }
-                                })
-                            .exceptionally((e) -> {
-                                System.out.println("Task failed with error: " + e.getMessage());
-                                if(state.errorRetry != null) {
-                                    for(StateMachine.Retrier retry : state.errorRetry) {
-                                        for(String error : retry.errorEquals) {
-                                            if (error.equals("States.ALL") || error.equals(e.getMessage())) {
-                                                if (retry.currentAttempts < retry.maxAttempts) {
-                                                    System.out.println(String.format("Retrying function, currentAttempts=%d, maxAttempts=%d", retry.currentAttempts, retry.maxAttempts));
-                                                    retry.currentAttempts = retry.currentAttempts + 1;
-                                                    return stateMachine;
-                                                }
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
-                                if(state.errorCatch != null) {
-                                    for(StateMachine.Catcher c : state.errorCatch) {
-                                        for(String error : c.errorEquals) {
-                                            if (error.equals("States.ALL") || error.equals(e.getMessage())) {
-                                                System.out.println("Caught an error, transitioning");
-                                                stateMachine.currentState = c.next;
-                                                return stateMachine;
-                                            }
-                                        }
-                                    }
-                                }
-                                throw new RuntimeException("Failing state machine, as uncaught error occurred");
-                            });
-                    if (state.end != null && state.end) {
-                        return f;
-                    } else {
-                        return f.thenCompose(States::transition);
-                    }
-                } catch (JsonProcessingException e) {
-                    throw new RuntimeException(e);
-                }
-            default:
-                throw new RuntimeException("Unknown state type: " + state.type);
-        }
+        State currentState = machine.states.get(machine.currentState);
+        return currentState.transition(machine);
     }
 
-    public String parseStateMachine(StateMachine stateMachine) {
+    public String parseStateMachine(final ASL stateMachine) {
 
-        ExternalCloudFuture<HttpRequest> trigger = rt.createExternalFuture();
+        Machine machine = toMachine(stateMachine);
+
+        ExternalFlowFuture<HttpRequest> trigger = rt.createExternalFuture();
 
         trigger.thenApply((request) -> {
             try {
-                stateMachine.currentState = stateMachine.startAt;
+                machine.currentState = machine.startAt;
                 Object document = objectMapper.readValue(request.getBodyAsBytes(), Object.class);
-                stateMachine.document = document;
+                machine.document = document;
+
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-            return stateMachine;
+            return machine;
         }).thenCompose(States::transition);
 
         return trigger.completionUrl().toString();
+    }
+
+    public static Machine toMachine(ASL stateMachine) {
+        Machine machine = new Machine();
+        machine.comment = stateMachine.comment;
+        machine.startAt = stateMachine.startAt;
+        machine.states = new HashMap<>();
+        stateMachine.states.forEach((k,v) -> {
+            // Translate value to the appropriate state type
+            machine.states.put(k, translateValue(v));
+        });
+        // Can now validate that all states referred to are defined
+        return machine;
+    }
+
+    private static State translateValue(ASL.State rawState) {
+        switch(rawState.type) {
+            case "Choice":
+                Choice choiceState = new Choice();
+                // TODO: null check all of these
+                choiceState.comment = rawState.comment;
+                // Optional
+                choiceState.defaultState = rawState.choiceDefault;
+                choiceState.inputPath = rawState.inputPath;
+                choiceState.outputPath = rawState.outputPath;
+                choiceState.rules = rawState.choiceRules
+                        .stream()
+                        .map(rawRule -> translateRule(rawRule))
+                        .collect(Collectors.toList());
+                return choiceState;
+            case "Succeed":
+                Succeed succeedState = new Succeed();
+                succeedState.comment = rawState.comment;
+                succeedState.inputPath = rawState.inputPath;
+                succeedState.outputPath = rawState.outputPath;
+                return succeedState;
+            case "Fail":
+                Fail failState = new Fail();
+                failState.comment = rawState.comment;
+                failState.cause = rawState.failCause;
+                failState.error = rawState.failError;
+                return failState;
+            case "Pass":
+                Pass passState = new Pass();
+                passState.comment = rawState.comment;
+
+                // Only one of these should be present
+                if (rawState.end == null && rawState.next == null) {
+                    throw new IllegalStateException("One of end or next must be defined on a Pass state");
+                }
+                if (rawState.end != null && rawState.next != null) {
+                    throw new IllegalStateException("Only one of end or next must be defined on a Pass state");
+                }
+                if(rawState.end != null) {
+                    passState.end = rawState.end.booleanValue();
+                }
+                if(rawState.next != null) {
+                    passState.next = rawState.next;
+                }
+
+                passState.inputPath = rawState.inputPath;
+                passState.outputPath = rawState.outputPath;
+                passState.result = rawState.result;
+                passState.resultPath = rawState.resultPath;
+                return passState;
+            case "Task":
+                Task taskState = new Task();
+                taskState.comment = rawState.comment;
+
+                // Only one of these should be present
+                if (rawState.end == null && rawState.next == null) {
+                    throw new IllegalStateException("One of end or next must be defined on a Task state");
+                }
+                if (rawState.end != null && rawState.next != null) {
+                    throw new IllegalStateException("Only one of end or next must be defined on a Task state");
+                }
+                if(rawState.end != null) {
+                    taskState.end = rawState.end.booleanValue();
+                }
+                if(rawState.next != null) {
+                    taskState.next = rawState.next;
+                }
+
+                if(rawState.taskHeartbeatSeconds != null) {
+                    taskState.heartbeatSeconds = Integer.valueOf(rawState.taskHeartbeatSeconds);
+                }
+                if(rawState.taskTimeoutSeconds != null) {
+                    taskState.timeoutSeconds = Integer.valueOf(rawState.taskTimeoutSeconds);
+                }
+                taskState.inputPath = rawState.inputPath;
+                taskState.outputPath = rawState.outputPath;
+                taskState.resource = rawState.resource;
+
+                taskState.retriers = rawState.errorRetry.stream().map(rawRetrier -> {
+                    Task.Retrier retrier = new Task.Retrier();
+                    retrier.backoffRate = rawRetrier.backoffRate;
+                    retrier.errorEquals = rawRetrier.errorEquals;
+                    retrier.maxAttempts = rawRetrier.maxAttempts;
+                    retrier.intervalSeconds = rawRetrier.intervalSeconds;
+                    return retrier;
+                }).collect(Collectors.toList());
+
+                taskState.catchers = rawState.errorCatch.stream().map(rawCatcher -> {
+                    Task.Catcher catcher = new Task.Catcher();
+                    catcher.errorEquals = rawCatcher.errorEquals;
+                    catcher.next = rawCatcher.next;
+                    catcher.resultPath = rawCatcher.resultPath;
+                    return catcher;
+                }).collect(Collectors.toList());
+
+                return taskState;
+            case "Wait":
+                Wait waitState = new Wait();
+                waitState.comment = rawState.comment;
+
+                // Only one of these should be present
+                if (rawState.end == null && rawState.next == null) {
+                    throw new IllegalStateException("One of end or next must be defined on a Wait state");
+                }
+                if (rawState.end != null && rawState.next != null) {
+                    throw new IllegalStateException("Only one of end or next must be defined on a Wait state");
+                }
+                if(rawState.end != null) {
+                    waitState.end = rawState.end.booleanValue();
+                }
+                if(rawState.next != null) {
+                    waitState.next = rawState.next;
+                }
+
+                waitState.inputPath = rawState.inputPath;
+                waitState.outputPath = rawState.outputPath;
+                waitState.timestamp = rawState.waitUntilTimestamp;
+                waitState.seconds = rawState.waitForSeconds;
+                return waitState;
+            default:
+                throw new IllegalStateException("Unable to parse state");
+        }
+    }
+
+    private static ChoiceRule translateRule(ASL.ChoiceRule rawRule) {
+        if(rawRule.stringEquals != null) {
+            return new ChoiceRule<String>(rawRule.next, rawRule.variable, s -> s.compareTo(rawRule.stringEquals) == 0);
+        } else if(rawRule.stringGreaterThan != null) {
+            return new ChoiceRule<String>(rawRule.next, rawRule.variable, s -> s.compareTo(rawRule.stringGreaterThan) > 0);
+        } else if(rawRule.stringLessThan != null) {
+            return new ChoiceRule<String>(rawRule.next, rawRule.variable, s -> s.compareTo(rawRule.stringLessThan) < 0);
+        } else if(rawRule.stringGreaterThanEquals != null) {
+            return new ChoiceRule<String>(rawRule.next, rawRule.variable, s -> s.compareTo(rawRule.stringGreaterThanEquals) >= 0);
+        } else if(rawRule.stringLessThanEquals != null) {
+            return new ChoiceRule<String>(rawRule.next, rawRule.variable, s -> s.compareTo(rawRule.stringLessThanEquals) <= 0);
+        } else if(rawRule.booleanEquals != null) {
+            return new ChoiceRule<Boolean>(rawRule.next, rawRule.variable, b -> b.compareTo(rawRule.booleanEquals) == 0);
+        } else if(rawRule.numericEquals != null) {
+            return new ChoiceRule<Double>(rawRule.next, rawRule.variable, i -> i.compareTo(rawRule.numericEquals) > 0);
+        } else if(rawRule.numericGreaterThan != null) {
+            return new ChoiceRule<Double>(rawRule.next, rawRule.variable, i -> i.compareTo(rawRule.numericGreaterThan) >= 0);
+        } else if(rawRule.numericGreaterThanEquals != null) {
+            return new ChoiceRule<Double>(rawRule.next, rawRule.variable, i -> i.compareTo(rawRule.numericGreaterThanEquals) >= 0);
+        } else if(rawRule.numericLessThan != null) {
+            return new ChoiceRule<Double>(rawRule.next, rawRule.variable, i -> i.compareTo(rawRule.numericLessThan) < 0);
+        } else if(rawRule.numericLessThanEquals != null) {
+            return new ChoiceRule<Double>(rawRule.next, rawRule.variable, i -> i.compareTo(rawRule.numericLessThanEquals) <= 0);
+        } else {
+            throw new IllegalStateException("Unable to parse ChoiceRule");
+        }
     }
 }

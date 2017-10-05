@@ -6,9 +6,7 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
-public class StateMachine implements Serializable{
-    String currentState;
-    Object document;
+public class ASL implements Serializable{
 
     @JsonProperty("Comment")
     String comment;
@@ -93,6 +91,8 @@ public class StateMachine implements Serializable{
         String stringGreaterThanEquals;
         @JsonProperty("NumericEquals")
         Double numericEquals;
+        @JsonProperty("NumericGreaterThan")
+        Double numericGreaterThan;
         @JsonProperty("NumericLessThan")
         Double numericLessThan;
         @JsonProperty("NumericLessThanEquals")
@@ -133,8 +133,6 @@ public class StateMachine implements Serializable{
         Integer maxAttempts;
         @JsonProperty("BackoffRate")
         Double backoffRate;
-
-        Integer currentAttempts = 0;
     }
 
     static class Catcher implements Serializable {

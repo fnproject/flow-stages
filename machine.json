@@ -1,5 +1,5 @@
 {
-  "Comment": "Dave",
+  "Comment": "A simple counter",
   "StartAt": "a",
   "States": {
     "a": {
@@ -15,14 +15,14 @@
       "Catch": [
         {
           "ErrorEquals": ["{\"error\":{\"message\":\"Route not found\"}}\n"],
-          "Next": "e"
+          "Next": "b"
         }
       ]
     },
     "b": {
       "Type": "Wait",
-      "Seconds": 3,
-      "Next": "c"
+      "Seconds": 30,
+      "Next": "d"
     },
     "c": {
       "Type": "Choice",
