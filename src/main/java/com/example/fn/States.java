@@ -57,11 +57,15 @@ public class States {
             case "Choice":
                 Choice choiceState = new Choice();
                 // TODO: null check all of these
+                // Perhaps call a validate method
                 choiceState.comment = rawState.comment;
                 // Optional
                 choiceState.defaultState = rawState.choiceDefault;
                 choiceState.inputPath = rawState.inputPath;
                 choiceState.outputPath = rawState.outputPath;
+                if(rawState.choiceRules == null) {
+                    throw new RuntimeException("Choice state must have a Choices field");
+                }
                 choiceState.rules = rawState.choiceRules
                         .stream()
                         .map(rawRule -> translateRule(rawRule))
@@ -76,7 +80,13 @@ public class States {
             case "Fail":
                 Fail failState = new Fail();
                 failState.comment = rawState.comment;
+                if(rawState.failCause == null){
+                    throw new RuntimeException("Fail state must have an Cause field");
+                }
                 failState.cause = rawState.failCause;
+                if(rawState.failError == null){
+                    throw new RuntimeException("Fail state must have an Error field");
+                }
                 failState.error = rawState.failError;
                 return failState;
             case "Pass":
@@ -120,14 +130,23 @@ public class States {
                     taskState.next = rawState.next;
                 }
 
-                if(rawState.taskHeartbeatSeconds != null) {
-                    taskState.heartbeatSeconds = Integer.valueOf(rawState.taskHeartbeatSeconds);
-                }
                 if(rawState.taskTimeoutSeconds != null) {
                     taskState.timeoutSeconds = Integer.valueOf(rawState.taskTimeoutSeconds);
+                } else {
+                    taskState.timeoutSeconds = 60;
+                }
+                if(rawState.taskHeartbeatSeconds != null) {
+                    taskState.heartbeatSeconds = Integer.valueOf(rawState.taskHeartbeatSeconds);
+                    if(taskState.heartbeatSeconds >= taskState.timeoutSeconds) {
+                        throw new RuntimeException("HeartbeatSeconds must be smaller than TimeoutSeconds");
+                    }
                 }
                 taskState.inputPath = rawState.inputPath;
                 taskState.outputPath = rawState.outputPath;
+
+                if(rawState.resource == null) {
+                    throw new RuntimeException("Task state must have a Resource field");
+                }
                 taskState.resource = rawState.resource;
 
                 taskState.retriers = rawState.errorRetry.stream().map(rawRetrier -> {
@@ -168,8 +187,15 @@ public class States {
 
                 waitState.inputPath = rawState.inputPath;
                 waitState.outputPath = rawState.outputPath;
-                waitState.timestamp = rawState.waitUntilTimestamp;
-                waitState.seconds = rawState.waitForSeconds;
+
+                if(rawState.waitUntilTimestamp != null && rawState.waitForSeconds == null) {
+                    waitState.timestamp = rawState.waitUntilTimestamp;
+                } else if(rawState.waitUntilTimestamp == null && rawState.waitForSeconds != null) {
+                    waitState.seconds = rawState.waitForSeconds;
+                } else {
+                    throw new RuntimeException("Wait state must contain exactly one of Seconds or Timestamp");
+                }
+
                 return waitState;
             default:
                 throw new IllegalStateException("Unable to parse state");
@@ -200,7 +226,7 @@ public class States {
         } else if(rawRule.numericLessThanEquals != null) {
             return new ChoiceRule<Double>(rawRule.next, rawRule.variable, i -> i.compareTo(rawRule.numericLessThanEquals) <= 0);
         } else {
-            throw new IllegalStateException("Unable to parse ChoiceRule");
+            throw new RuntimeException("Unable to parse ChoiceRule");
         }
     }
 }
