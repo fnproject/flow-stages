@@ -5,6 +5,7 @@ import com.fnproject.fn.api.flow.*;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class States {
@@ -44,19 +45,19 @@ public class States {
         machine.comment = stateMachine.comment;
         machine.startAt = stateMachine.startAt;
         machine.states = new HashMap<>();
-        stateMachine.states.forEach((k,v) -> {
-            // Translate value to the appropriate state type
-            machine.states.put(k, translateValue(v));
-        });
-        // Can now validate that all states referred to are defined
+        Set<String> stateLabels = stateMachine.states.keySet();
+        stateMachine.states.forEach((k, v) -> machine.states.put(k, translateValue(v, stateLabels)));
         return machine;
     }
 
-    private static State translateValue(ASL.State rawState) {
+    private static State translateValue(ASL.State rawState, Set<String> stateLabels) {
         switch(rawState.type) {
             case "Choice":
                 Choice choiceState = new Choice();
                 choiceState.comment = rawState.comment;
+                if(!stateLabels.contains(rawState.choiceDefault)) {
+                    throw new RuntimeException("Found a Default field referring to a non-existent state");
+                }
                 choiceState.defaultState = rawState.choiceDefault;
                 choiceState.inputPath = rawState.inputPath;
                 choiceState.outputPath = rawState.outputPath;
@@ -65,7 +66,12 @@ public class States {
                 }
                 choiceState.rules = rawState.choiceRules
                         .stream()
-                        .map(rawRule -> translateRule(rawRule))
+                        .map(rawRule -> {
+                            if(!stateLabels.contains(rawRule.next)) {
+                                throw new RuntimeException("Found a Next field referring to a non-existent state");
+                            }
+                            return translateRule(rawRule);
+                        })
                         .collect(Collectors.toList());
                 return choiceState;
             case "Succeed":
@@ -89,6 +95,9 @@ public class States {
                 if (rawState.end != null && rawState.next == null) {
                     passState.end = rawState.end.booleanValue();
                 } else if (rawState.end == null && rawState.next != null) {
+                    if(!stateLabels.contains(rawState.next)) {
+                        throw new RuntimeException("Found a Next field referring to a non-existent state");
+                    }
                     passState.next = rawState.next;
                 } else {
                     throw new IllegalStateException("Only one of End or Next must be defined on a Pass state");
@@ -106,6 +115,9 @@ public class States {
                 if (rawState.end != null && rawState.next == null) {
                     taskState.end = rawState.end.booleanValue();
                 } else if (rawState.end == null && rawState.next != null) {
+                    if(!stateLabels.contains(rawState.next)) {
+                        throw new RuntimeException("Found a Next field referring to a non-existent state");
+                    }
                     taskState.next = rawState.next;
                 } else {
                     throw new IllegalStateException("Only one of End or Next must be defined on a Task state");
@@ -155,6 +167,9 @@ public class States {
                 if (rawState.end != null && rawState.next == null) {
                     waitState.end = rawState.end.booleanValue();
                 } else if (rawState.end == null && rawState.next != null) {
+                    if(!stateLabels.contains(rawState.next)) {
+                        throw new RuntimeException("Found a Next field referring to a non-existent state");
+                    }
                     waitState.next = rawState.next;
                 } else {
                     throw new IllegalStateException("Only one of End or Next must be defined on a Wait state");
