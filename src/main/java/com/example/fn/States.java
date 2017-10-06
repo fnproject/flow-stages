@@ -45,6 +45,9 @@ public class States {
         machine.comment = stateMachine.comment;
         machine.startAt = stateMachine.startAt;
         machine.states = new HashMap<>();
+        machine.timeoutSeconds = stateMachine.timeoutSeconds;
+        machine.version = stateMachine.version;
+
         Set<String> stateLabels = stateMachine.states.keySet();
         stateMachine.states.forEach((k, v) -> machine.states.put(k, translateValue(v, stateLabels)));
         return machine;
@@ -56,19 +59,19 @@ public class States {
                 Choice choiceState = new Choice();
                 choiceState.comment = rawState.comment;
                 if(!stateLabels.contains(rawState.choiceDefault)) {
-                    throw new RuntimeException("Found a Default field referring to a non-existent state");
+                    throw new InvalidMachineException("Found a Default field referring to a non-existent state");
                 }
                 choiceState.defaultState = rawState.choiceDefault;
                 choiceState.inputPath = rawState.inputPath;
                 choiceState.outputPath = rawState.outputPath;
                 if(rawState.choiceRules == null) {
-                    throw new RuntimeException("Choice state must have a Choices field");
+                    throw new InvalidMachineException("Choice state must have a Choices field");
                 }
                 choiceState.rules = rawState.choiceRules
                         .stream()
                         .map(rawRule -> {
                             if(!stateLabels.contains(rawRule.next)) {
-                                throw new RuntimeException("Found a Next field referring to a non-existent state");
+                                throw new InvalidMachineException("Found a Next field referring to a non-existent state");
                             }
                             return translateRule(rawRule);
                         })
@@ -82,10 +85,10 @@ public class States {
                 return succeedState;
             case "Fail":
                 if(rawState.failCause == null) {
-                    throw new RuntimeException("Fail state must have an Cause field");
+                    throw new InvalidMachineException("Fail state must have an Cause field");
                 }
                 if(rawState.failError == null) {
-                    throw new RuntimeException("Fail state must have an Error field");
+                    throw new InvalidMachineException("Fail state must have an Error field");
                 }
                 return new Fail(rawState.comment, rawState.failError, rawState.failCause);
             case "Pass":
@@ -96,11 +99,11 @@ public class States {
                     passState.end = rawState.end.booleanValue();
                 } else if (rawState.end == null && rawState.next != null) {
                     if(!stateLabels.contains(rawState.next)) {
-                        throw new RuntimeException("Found a Next field referring to a non-existent state");
+                        throw new InvalidMachineException("Found a Next field referring to a non-existent state");
                     }
                     passState.next = rawState.next;
                 } else {
-                    throw new IllegalStateException("Only one of End or Next must be defined on a Pass state");
+                    throw new InvalidMachineException("Only one of End or Next must be defined on a Pass state");
                 }
 
                 passState.inputPath = rawState.inputPath;
@@ -116,11 +119,11 @@ public class States {
                     taskState.end = rawState.end.booleanValue();
                 } else if (rawState.end == null && rawState.next != null) {
                     if(!stateLabels.contains(rawState.next)) {
-                        throw new RuntimeException("Found a Next field referring to a non-existent state");
+                        throw new InvalidMachineException("Found a Next field referring to a non-existent state");
                     }
                     taskState.next = rawState.next;
                 } else {
-                    throw new IllegalStateException("Only one of End or Next must be defined on a Task state");
+                    throw new InvalidMachineException("Only one of End or Next must be defined on a Task state");
                 }
 
                 if(rawState.taskTimeoutSeconds != null) {
@@ -131,14 +134,14 @@ public class States {
                 if(rawState.taskHeartbeatSeconds != null) {
                     taskState.heartbeatSeconds = Integer.valueOf(rawState.taskHeartbeatSeconds);
                     if(taskState.heartbeatSeconds >= taskState.timeoutSeconds) {
-                        throw new RuntimeException("HeartbeatSeconds must be smaller than TimeoutSeconds");
+                        throw new InvalidMachineException("HeartbeatSeconds must be smaller than TimeoutSeconds");
                     }
                 }
                 taskState.inputPath = rawState.inputPath;
                 taskState.outputPath = rawState.outputPath;
 
                 if(rawState.resource == null) {
-                    throw new RuntimeException("Task state must have a Resource field");
+                    throw new InvalidMachineException("Task state must have a Resource field");
                 }
                 taskState.resource = rawState.resource;
 
@@ -168,11 +171,11 @@ public class States {
                     waitState.end = rawState.end.booleanValue();
                 } else if (rawState.end == null && rawState.next != null) {
                     if(!stateLabels.contains(rawState.next)) {
-                        throw new RuntimeException("Found a Next field referring to a non-existent state");
+                        throw new InvalidMachineException("Found a Next field referring to a non-existent state");
                     }
                     waitState.next = rawState.next;
                 } else {
-                    throw new IllegalStateException("Only one of End or Next must be defined on a Wait state");
+                    throw new InvalidMachineException("Only one of End or Next must be defined on a Wait state");
                 }
 
                 waitState.inputPath = rawState.inputPath;
@@ -183,12 +186,12 @@ public class States {
                 } else if(rawState.waitUntilTimestamp == null && rawState.waitForSeconds != null) {
                     waitState.seconds = rawState.waitForSeconds;
                 } else {
-                    throw new RuntimeException("Wait state must contain exactly one of Seconds or Timestamp");
+                    throw new InvalidMachineException("Wait state must contain exactly one of Seconds or Timestamp");
                 }
 
                 return waitState;
             default:
-                throw new IllegalStateException("Unable to parse state");
+                throw new InvalidMachineException("State type must be one of Pass, Task, Choice, Wait, Succeed, or Fail");
         }
     }
 
@@ -216,7 +219,7 @@ public class States {
         } else if(rawRule.numericLessThanEquals != null) {
             return new ChoiceRule<Double>(rawRule.next, rawRule.variable, i -> i.compareTo(rawRule.numericLessThanEquals) <= 0);
         } else {
-            throw new RuntimeException("Unable to parse ChoiceRule");
+            throw new InvalidMachineException("Unable to parse ChoiceRule");
         }
     }
 }
