@@ -1,5 +1,6 @@
 name: fnproject/states
 version: 0.0.1
 runtime: java
-cmd: com.example.fn.States::parseStateMachine
+cmd: com.example.fn.States::withDocument
 path: /states
+timeout: 120

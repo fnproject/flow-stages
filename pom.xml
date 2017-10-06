@@ -70,5 +70,13 @@
                 </configuration>
             </plugin>
         </plugins>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <targetPath>.</targetPath>
+                <filtering>false</filtering>
+                <includes><include>machine.json</include></includes>
+            </resource>
+        </resources>
     </build>
 </project>

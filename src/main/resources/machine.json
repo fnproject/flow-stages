@@ -5,7 +5,7 @@
     "a": {
       "Type": "Task",
       "Resource": "example/increment",
-      "Next": "rr",
+      "Next": "c",
       "Retry": [
         {
           "ErrorEquals": ["{\"error\":{\"message\":\"Route not found\"}}\n"],
@@ -15,7 +15,7 @@
       "Catch": [
         {
           "ErrorEquals": ["{\"error\":{\"message\":\"Route not found\"}}\n"],
-          "Next": "b"
+          "Next": "e"
         }
       ]
     },
@@ -29,7 +29,7 @@
       "Choices": [
         {
           "Variable": "$.value",
-          "NumericEquals": 10,
+          "NumericEquals": 3,
           "Next": "d"
         }
       ],

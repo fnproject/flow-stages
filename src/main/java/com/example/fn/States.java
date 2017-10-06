@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fnproject.fn.api.flow.*;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -19,7 +20,7 @@ public class States {
         return currentState.transition(machine);
     }
 
-    public String parseStateMachine(final ASL stateMachine) {
+    public String withMachine(final ASL stateMachine) {
 
         Machine machine = toMachine(stateMachine);
 
@@ -38,6 +39,27 @@ public class States {
         }).thenCompose(States::transition);
 
         return trigger.completionUrl().toString();
+    }
+
+    public Object withDocument(final Object document) throws IOException {
+
+        ASL stateMachine = getASLResource("machine.json");
+        Machine machine = toMachine(stateMachine);
+
+        machine.document = document;
+        machine.currentState = machine.startAt;
+
+        return rt.completedValue(machine).thenCompose(States::transition).get().document;
+    }
+
+    private ASL getASLResource(String resourceName) throws IOException {
+        InputStream definition = getClass().getClassLoader().getResourceAsStream(resourceName);
+        if(definition == null) {
+            throw new RuntimeException("machine.json not found");
+        }
+
+        byte[] jsonData = definition.readAllBytes();
+        return objectMapper.readValue(jsonData, ASL.class);
     }
 
     public static Machine toMachine(ASL stateMachine) {
