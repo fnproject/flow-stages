@@ -1,5 +1,8 @@
-package com.example.fn;
+package com.example.fn.states;
 
+import com.example.fn.Machine;
+import com.example.fn.State;
+import com.example.fn.States;
 import com.fnproject.fn.api.flow.FlowFuture;
 import com.fnproject.fn.api.flow.Flows;
 import com.jayway.jsonpath.JsonPath;
@@ -7,13 +10,17 @@ import com.jayway.jsonpath.JsonPath;
 import java.util.List;
 
 public class Choice extends State {
-    List<ChoiceRule> rules;
-    String defaultState;
-    String inputPath;
-    String outputPath;
+    public List<ChoiceRule> rules;
+    public String defaultState;
+    public String inputPath;
+    public String outputPath;
+
+    public Choice(String comment) {
+        super(comment);
+    }
 
     @Override
-    FlowFuture<Machine> transition(Machine machine) {
+    public FlowFuture<Machine> transition(Machine machine) {
         // TODO: Support timestamp comparisons, and all combinators
         for(ChoiceRule rule : rules) {
             Double variable = JsonPath.parse(machine.document).read(rule.variable, Double.class);

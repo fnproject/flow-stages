@@ -1,5 +1,8 @@
-package com.example.fn;
+package com.example.fn.states;
 
+import com.example.fn.Machine;
+import com.example.fn.State;
+import com.example.fn.States;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fnproject.fn.api.Headers;
@@ -14,22 +17,26 @@ import java.util.HashMap;
 import java.util.List;
 
 public class Task extends State {
-    String resource;
-    Integer timeoutSeconds;
-    Integer heartbeatSeconds;
-    String inputPath;
-    String outputPath;
-    String next;
-    Boolean end;
+    public String resource;
+    public Integer timeoutSeconds;
+    public Integer heartbeatSeconds;
+    public String inputPath;
+    public String outputPath;
+    public String next;
+    public Boolean end;
     String resultPath;
     String result; // This shouldn't be here?
-    List<Retrier> retriers;
-    List<Catcher> catchers;
+    public List<Retrier> retriers;
+    public List<Catcher> catchers;
 
     private final static ObjectMapper objectMapper = new ObjectMapper();
 
+    public Task(String comment) {
+        super(comment);
+    }
+
     @Override
-    FlowFuture<Machine> transition(Machine machine) {
+    public FlowFuture<Machine> transition(Machine machine) {
         HashMap<String, String> headers = new HashMap<>();
         headers.put("Content-type", "application/json");
         try {
@@ -115,7 +122,7 @@ public class Task extends State {
         }
     }
 
-    static class Retrier implements Serializable {
+    public static class Retrier implements Serializable {
         List<String> errorEquals;
         Integer intervalSeconds;
         Integer maxAttempts;
@@ -123,11 +130,24 @@ public class Task extends State {
 
         // Mutable
         Integer currentAttempts = 0;
+
+        public Retrier(Double backoffRate, List<String> errorEquals, Integer maxAttempts, Integer intervalSeconds) {
+            this.backoffRate = backoffRate;
+            this.errorEquals = errorEquals;
+            this.maxAttempts = maxAttempts;
+            this.intervalSeconds = intervalSeconds;
+        }
     }
 
-    static class Catcher implements Serializable {
+    public static class Catcher implements Serializable {
         List<String> errorEquals;
         String resultPath;
         String next;
+
+        public Catcher(List<String> errorEquals, String next, String resultPath) {
+            this.errorEquals = errorEquals;
+            this.next = next;
+            this.resultPath = resultPath;
+        }
     }
 }

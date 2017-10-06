@@ -1,5 +1,6 @@
 package com.example.fn;
 
+import com.example.fn.states.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fnproject.fn.api.flow.*;
 
@@ -78,33 +79,28 @@ public class States {
     private static State translateValue(ASL.State rawState, Set<String> stateLabels) {
         switch(rawState.type) {
             case "Choice":
-                Choice choiceState = new Choice();
-                choiceState.comment = rawState.comment;
                 if(!stateLabels.contains(rawState.choiceDefault)) {
                     throw new InvalidMachineException("Found a Default field referring to a non-existent state");
                 }
-                choiceState.defaultState = rawState.choiceDefault;
-                choiceState.inputPath = rawState.inputPath;
-                choiceState.outputPath = rawState.outputPath;
                 if(rawState.choiceRules == null) {
                     throw new InvalidMachineException("Choice state must have a Choices field");
                 }
+                Choice choiceState = new Choice(rawState.comment);
+                choiceState.defaultState = rawState.choiceDefault;
+                choiceState.inputPath = rawState.inputPath;
+                choiceState.outputPath = rawState.outputPath;
                 choiceState.rules = rawState.choiceRules
-                        .stream()
-                        .map(rawRule -> {
-                            if(!stateLabels.contains(rawRule.next)) {
-                                throw new InvalidMachineException("Found a Next field referring to a non-existent state");
-                            }
-                            return translateRule(rawRule);
-                        })
-                        .collect(Collectors.toList());
+                    .stream()
+                    .map(rawRule -> {
+                        if (!stateLabels.contains(rawRule.next)) {
+                            throw new InvalidMachineException("Found a Next field referring to a non-existent state");
+                        }
+                        return translateRule(rawRule);
+                    })
+                    .collect(Collectors.toList());
                 return choiceState;
             case "Succeed":
-                Succeed succeedState = new Succeed();
-                succeedState.comment = rawState.comment;
-                succeedState.inputPath = rawState.inputPath;
-                succeedState.outputPath = rawState.outputPath;
-                return succeedState;
+                return new Succeed(rawState.comment, rawState.inputPath, rawState.outputPath);
             case "Fail":
                 if(rawState.failCause == null) {
                     throw new InvalidMachineException("Fail state must have an Cause field");
@@ -114,9 +110,7 @@ public class States {
                 }
                 return new Fail(rawState.comment, rawState.failError, rawState.failCause);
             case "Pass":
-                Pass passState = new Pass();
-                passState.comment = rawState.comment;
-
+                Pass passState = new Pass(rawState.comment);
                 if (rawState.end != null && rawState.next == null) {
                     passState.end = rawState.end.booleanValue();
                 } else if (rawState.end == null && rawState.next != null) {
@@ -127,15 +121,13 @@ public class States {
                 } else {
                     throw new InvalidMachineException("Only one of End or Next must be defined on a Pass state");
                 }
-
                 passState.inputPath = rawState.inputPath;
                 passState.outputPath = rawState.outputPath;
                 passState.result = rawState.result;
                 passState.resultPath = rawState.resultPath;
                 return passState;
             case "Task":
-                Task taskState = new Task();
-                taskState.comment = rawState.comment;
+                Task taskState = new Task(rawState.comment);
 
                 if (rawState.end != null && rawState.next == null) {
                     taskState.end = rawState.end.booleanValue();
@@ -167,27 +159,19 @@ public class States {
                 }
                 taskState.resource = rawState.resource;
 
-                taskState.retriers = rawState.errorRetry.stream().map(rawRetrier -> {
-                    Task.Retrier retrier = new Task.Retrier();
-                    retrier.backoffRate = rawRetrier.backoffRate;
-                    retrier.errorEquals = rawRetrier.errorEquals;
-                    retrier.maxAttempts = rawRetrier.maxAttempts;
-                    retrier.intervalSeconds = rawRetrier.intervalSeconds;
-                    return retrier;
-                }).collect(Collectors.toList());
+                taskState.retriers = rawState.errorRetry
+                        .stream()
+                        .map(rawRetrier -> new Task.Retrier(rawRetrier.backoffRate, rawRetrier.errorEquals, rawRetrier.maxAttempts, rawRetrier.intervalSeconds))
+                        .collect(Collectors.toList());
 
-                taskState.catchers = rawState.errorCatch.stream().map(rawCatcher -> {
-                    Task.Catcher catcher = new Task.Catcher();
-                    catcher.errorEquals = rawCatcher.errorEquals;
-                    catcher.next = rawCatcher.next;
-                    catcher.resultPath = rawCatcher.resultPath;
-                    return catcher;
-                }).collect(Collectors.toList());
+                taskState.catchers = rawState.errorCatch
+                        .stream()
+                        .map(rawCatcher -> new Task.Catcher(rawCatcher.errorEquals, rawCatcher.next, rawCatcher.resultPath))
+                        .collect(Collectors.toList());
 
                 return taskState;
             case "Wait":
-                Wait waitState = new Wait();
-                waitState.comment = rawState.comment;
+                Wait waitState = new Wait(rawState.comment);
 
                 if (rawState.end != null && rawState.next == null) {
                     waitState.end = rawState.end.booleanValue();

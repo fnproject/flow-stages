@@ -4,8 +4,8 @@ import java.io.Serializable;
 import java.util.Map;
 
 public class Machine implements Serializable {
-    String currentState;
-    Object document;
+    public String currentState;
+    public Object document;
 
     String comment;
     String startAt;

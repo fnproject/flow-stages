@@ -1,5 +1,8 @@
-package com.example.fn;
+package com.example.fn.states;
 
+import com.example.fn.Machine;
+import com.example.fn.State;
+import com.example.fn.States;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fnproject.fn.api.flow.Flow;
 import com.fnproject.fn.api.flow.FlowFuture;
@@ -9,16 +12,36 @@ import com.jayway.jsonpath.JsonPath;
 import java.io.IOException;
 
 public class Pass extends State {
-    String inputPath;
-    String outputPath;
-    Object result;
-    String resultPath;
-    String next;
-    Boolean end;
+    public String inputPath;
+    public String outputPath;
+    public Object result;
+    public String resultPath;
+    public String next;
+    public Boolean end;
     private final static ObjectMapper objectMapper = new ObjectMapper();
 
+    public Pass(String comment) {
+        super(comment);
+        this.next = next;
+
+        this.inputPath = inputPath;
+        this.outputPath = outputPath;
+        this.result = result;
+        this.resultPath = resultPath;
+    }
+
+    public Pass(String comment, boolean end, String inputPath, String outputPath, String result, String resultPath) {
+        super(comment);
+        this.end = end;
+
+        this.inputPath = inputPath;
+        this.outputPath = outputPath;
+        this.result = result;
+        this.resultPath = resultPath;
+    }
+
     @Override
-    FlowFuture<Machine> transition(Machine machine) {
+    public FlowFuture<Machine> transition(Machine machine) {
         Flow flow = Flows.currentFlow();
         if(end != null && end) {
             return flow.completedValue(machine);

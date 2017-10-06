@@ -6,5 +6,10 @@ import java.io.Serializable;
 
 public abstract class State implements Serializable {
     String comment;
-    abstract FlowFuture<Machine> transition(Machine machine);
+
+    public State(String comment) {
+        this.comment = comment;
+    }
+
+    public abstract FlowFuture<Machine> transition(Machine machine);
 }
