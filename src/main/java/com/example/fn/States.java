@@ -209,9 +209,9 @@ public class States {
         } else if(rawRule.booleanEquals != null) {
             return new ChoiceRule<Boolean>(rawRule.next, rawRule.variable, b -> b.compareTo(rawRule.booleanEquals) == 0);
         } else if(rawRule.numericEquals != null) {
-            return new ChoiceRule<Double>(rawRule.next, rawRule.variable, i -> i.compareTo(rawRule.numericEquals) > 0);
+            return new ChoiceRule<Double>(rawRule.next, rawRule.variable, i -> i.compareTo(rawRule.numericEquals) == 0);
         } else if(rawRule.numericGreaterThan != null) {
-            return new ChoiceRule<Double>(rawRule.next, rawRule.variable, i -> i.compareTo(rawRule.numericGreaterThan) >= 0);
+            return new ChoiceRule<Double>(rawRule.next, rawRule.variable, i -> i.compareTo(rawRule.numericGreaterThan) > 0);
         } else if(rawRule.numericGreaterThanEquals != null) {
             return new ChoiceRule<Double>(rawRule.next, rawRule.variable, i -> i.compareTo(rawRule.numericGreaterThanEquals) >= 0);
         } else if(rawRule.numericLessThan != null) {
