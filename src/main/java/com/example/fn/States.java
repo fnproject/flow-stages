@@ -86,7 +86,7 @@ public class States {
     private static State translateValue(ASL.State rawState, Set<String> stateLabels) {
         switch(rawState.type) {
             case "Choice":
-                if(!stateLabels.contains(rawState.choiceDefault)) {
+                if((rawState.choiceDefault != null) && !stateLabels.contains(rawState.choiceDefault)) {
                     throw new InvalidMachineException("Found a Default field referring to a non-existent state");
                 }
                 if(rawState.choiceRules == null) {
