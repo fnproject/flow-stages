@@ -1,6 +1,0 @@
-name: example/identity
-version: 0.0.1
-runtime: base
-memory: 128
-format: default
-timeout: 30
