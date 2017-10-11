@@ -166,16 +166,18 @@ public class Stages {
                 }
                 taskState.resource = rawState.resource;
 
-                taskState.retriers = rawState.errorRetry
-                        .stream()
-                        .map(rawRetrier -> new Task.Retrier(rawRetrier.backoffRate, rawRetrier.errorEquals, rawRetrier.maxAttempts, rawRetrier.intervalSeconds))
-                        .collect(Collectors.toList());
-
-                taskState.catchers = rawState.errorCatch
-                        .stream()
-                        .map(rawCatcher -> new Task.Catcher(rawCatcher.errorEquals, rawCatcher.next, rawCatcher.resultPath))
-                        .collect(Collectors.toList());
-
+                if(rawState.errorRetry != null) {
+                    taskState.retriers = rawState.errorRetry
+                            .stream()
+                            .map(rawRetrier -> new Task.Retrier(rawRetrier.backoffRate, rawRetrier.errorEquals, rawRetrier.maxAttempts, rawRetrier.intervalSeconds))
+                            .collect(Collectors.toList());
+                }
+                if(rawState.errorCatch != null) {
+                    taskState.catchers = rawState.errorCatch
+                            .stream()
+                            .map(rawCatcher -> new Task.Catcher(rawCatcher.errorEquals, rawCatcher.next, rawCatcher.resultPath))
+                            .collect(Collectors.toList());
+                }
                 return taskState;
             case "Wait":
                 Wait waitState = new Wait(rawState.comment);
