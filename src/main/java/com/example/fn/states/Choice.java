@@ -3,6 +3,7 @@ package com.example.fn.states;
 import com.example.fn.Machine;
 import com.example.fn.State;
 import com.example.fn.States;
+import com.example.fn.TerminatedWithErrorException;
 import com.fnproject.fn.api.flow.FlowFuture;
 import com.fnproject.fn.api.flow.Flows;
 import com.jayway.jsonpath.JsonPath;
@@ -33,8 +34,7 @@ public class Choice extends State {
             machine.currentState = defaultState;
             return Flows.currentFlow().completedValue(machine).thenCompose(States::transition);
         } else {
-            // TODO: Throw States.NoChoiceMatched
-            throw new IllegalStateException("States.NoChoiceMatched");
+            throw new TerminatedWithErrorException("States.NoChoiceMatched");
         }
     }
 }

@@ -45,12 +45,19 @@ public class States {
     public Object withDocument(final Object document) throws IOException {
 
         ASL stateMachine = getASLResource("machine.json");
-        Machine machine = toMachine(stateMachine);
 
-        machine.document = document;
-        machine.currentState = machine.startAt;
+        try {
+            Machine machine = toMachine(stateMachine);
 
-        return rt.completedValue(machine).thenCompose(States::transition).get().document;
+            machine.document = document;
+            machine.currentState = machine.startAt;
+
+            return rt.completedValue(machine).thenCompose(States::transition).get().document;
+        } catch(InvalidMachineException e) {
+            return "Invalid state machine definition: " + e.getMessage();
+        } catch(TerminatedWithErrorException e) {
+            return "State machine terminated with an error: " + e.getMessage();
+        }
     }
 
     private ASL getASLResource(String resourceName) throws IOException {
