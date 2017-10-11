@@ -22,22 +22,6 @@ public class Pass extends State {
 
     public Pass(String comment) {
         super(comment);
-        this.next = next;
-
-        this.inputPath = inputPath;
-        this.outputPath = outputPath;
-        this.result = result;
-        this.resultPath = resultPath;
-    }
-
-    public Pass(String comment, boolean end, String inputPath, String outputPath, String result, String resultPath) {
-        super(comment);
-        this.end = end;
-
-        this.inputPath = inputPath;
-        this.outputPath = outputPath;
-        this.result = result;
-        this.resultPath = resultPath;
     }
 
     @Override
