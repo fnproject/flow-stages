@@ -1,47 +1,25 @@
 {
   "Comment": "A simple counter",
-  "StartAt": "a",
+  "StartAt": "Incrementer",
   "States": {
-    "a": {
+    "Incrementer": {
       "Type": "Task",
       "Resource": "example/increment",
-      "Next": "c",
-      "Retry": [
-        {
-          "ErrorEquals": ["{\"error\":{\"message\":\"Route not found\"}}\n"],
-          "MaxAttempts": 2
-        }
-      ],
-      "Catch": [
-        {
-          "ErrorEquals": ["{\"error\":{\"message\":\"Route not found\"}}\n"],
-          "Next": "e"
-        }
-      ]
+      "Next": "Comparator"
     },
-    "b": {
-      "Type": "Wait",
-      "Seconds": 30,
-      "Next": "d"
-    },
-    "c": {
+    "Comparator": {
       "Type": "Choice",
       "Choices": [
         {
           "Variable": "$.value",
           "NumericEquals": 3,
-          "Next": "d"
+          "Next": "Finish"
         }
       ],
-      "Default": "a"
+      "Default": "Incrementer"
     },
-    "d": {
+    "Finish": {
         "Type": "Succeed"
-    },
-    "e": {
-      "Type":"Fail",
-      "Error": "Failed the state machine",
-      "Cause": "Probably an uncaught error"
     }
   }
 }
