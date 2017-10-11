@@ -1,4 +1,4 @@
-package com.example.fn;
+package com.fnproject.fn.flow.stages;
 
 import java.io.Serializable;
 import java.util.Map;

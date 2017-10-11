@@ -1,14 +1,14 @@
-package com.example.fn.states;
+package com.fnproject.fn.flow.stages.states;
 
-import com.example.fn.Machine;
-import com.example.fn.State;
-import com.example.fn.States;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fnproject.fn.api.Headers;
 import com.fnproject.fn.api.flow.FlowFuture;
 import com.fnproject.fn.api.flow.Flows;
 import com.fnproject.fn.api.flow.HttpMethod;
+import com.fnproject.fn.flow.stages.Machine;
+import com.fnproject.fn.flow.stages.Stages;
+import com.fnproject.fn.flow.stages.State;
 import com.jayway.jsonpath.JsonPath;
 
 import java.io.IOException;
@@ -115,7 +115,7 @@ public class Task extends State {
             if (end != null && end) {
                 return f;
             } else {
-                return f.thenCompose(States::transition);
+                return f.thenCompose(Stages::transition);
             }
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);

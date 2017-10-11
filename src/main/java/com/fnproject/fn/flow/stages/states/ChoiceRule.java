@@ -1,4 +1,4 @@
-package com.example.fn.states;
+package com.fnproject.fn.flow.stages.states;
 
 import java.io.Serializable;
 import java.util.function.Predicate;

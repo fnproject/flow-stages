@@ -1,6 +1,6 @@
-name: fnproject/states
+name: fnproject/flowstages
 version: 0.0.1
 runtime: java
-cmd: com.example.fn.States::withDocument
-path: /states
+cmd: com.fnproject.fn.flow.stages.Stages::withDocument
+path: /stages
 timeout: 120

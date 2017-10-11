@@ -1,8 +1,8 @@
-package com.example.fn;
+package com.fnproject.fn.flow.stages;
 
-import com.example.fn.states.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fnproject.fn.api.flow.*;
+import com.fnproject.fn.flow.stages.states.*;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,7 +10,7 @@ import java.util.HashMap;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class States {
+public class Stages {
 
     private final Flow rt = Flows.currentFlow();
     private final static ObjectMapper objectMapper = new ObjectMapper();
@@ -37,7 +37,7 @@ public class States {
                 throw new RuntimeException(e);
             }
             return machine;
-        }).thenCompose(States::transition);
+        }).thenCompose(Stages::transition);
 
         return trigger.completionUrl().toString();
     }
@@ -52,7 +52,7 @@ public class States {
             machine.document = document;
             machine.currentState = machine.startAt;
 
-            return rt.completedValue(machine).thenCompose(States::transition).get().document;
+            return rt.completedValue(machine).thenCompose(Stages::transition).get().document;
         } catch(InvalidMachineException e) {
             return "Invalid state machine definition: " + e.getMessage();
         } catch(TerminatedWithErrorException e) {

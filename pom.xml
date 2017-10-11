@@ -6,8 +6,8 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
-    <groupId>com.example.fn</groupId>
-    <artifactId>states</artifactId>
+    <groupId>com.fnproject.fn.flow</groupId>
+    <artifactId>stages</artifactId>
     <version>1.0.0</version>
 
     <repositories>

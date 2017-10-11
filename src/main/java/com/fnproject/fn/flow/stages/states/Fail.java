@@ -1,7 +1,7 @@
-package com.example.fn.states;
+package com.fnproject.fn.flow.stages.states;
 
-import com.example.fn.Machine;
-import com.example.fn.State;
+import com.fnproject.fn.flow.stages.Machine;
+import com.fnproject.fn.flow.stages.State;
 import com.fnproject.fn.api.flow.FlowFuture;
 import com.fnproject.fn.api.flow.Flows;
 

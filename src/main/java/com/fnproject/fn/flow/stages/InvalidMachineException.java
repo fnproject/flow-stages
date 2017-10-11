@@ -1,4 +1,4 @@
-package com.example.fn;
+package com.fnproject.fn.flow.stages;
 
 public class InvalidMachineException extends RuntimeException {
     public InvalidMachineException(String message) {
