@@ -73,9 +73,17 @@ Configure the function with the API URL of the Flow completer server
 ```bash
 $ fn apps config set flow COMPLETER_BASE_URL $DOCKER_LOCALHOST
 ```
-Call the function with a JSON document:
+The example machine definition provided with Fn Flow Stages (at `./src/main/resources/machine.json`) is a simple counting machine, that calls an incrementing function (`example/increment`) with the value of the `value` field in the document repeatedly, until it is equal to 3, then terminates successfully.
+
+The incrementing function needs to be built (and a route created to it) before running the machine
+```bash
+$ cd increment
+$ fn build
+$ fn routes create example /increment
+$ cd -
+```
+Finally, the function with a JSON document:
 ```bash
 $ echo '{"value":1}' | fn call flow /stages
 ```
-The example machine definition provided with Fn Flow Stages (at `./src/main/resources/machine.json`) is a simple counting machine, that increments the value of the `value` field in the document until it is equal to 3 and then terminates successfully. The result of the call above should be  `{"value": 3}`.
-
+The result of the call above should be  `{"value": 3}`.
