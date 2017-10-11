@@ -1,6 +1,6 @@
 # Fn Flow Stages
 
-Fn Flow Stages provides a way of connecting Fn functions in a declarative way, based on the ASL specification. This defines a state machine, where a JSON document is passed between labelled states that perform actions depending on the state type and the contents of the document. Fn  Flow Stages is implemented using Fn Flow and the Fn Java FDK.
+Fn Flow Stages provides a way of connecting Fn functions in a declarative way, based on the (ASL specification)[https://states-language.net]. This defines a state machine, where a JSON document is passed between labelled states that perform actions depending on the state type and the contents of the document. Fn  Flow Stages is implemented using Fn Flow and the Fn Java FDK.
 
 There are currently two ways of using Fn Flow Stages:
 
