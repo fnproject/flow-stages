@@ -15,7 +15,7 @@ Before you get started, you will need to have the following things:
 
 * Fn CLI
 * Fn Java FDK
-* Fn completer
+* Fn Flow server
 * Docker-ce 17.06+ installed locally
 * A Docker Hub account
 
@@ -34,13 +34,13 @@ You will also need to be logged in to your Docker Hub account in order to deploy
 ```bash
 $ docker login
 ```
-#### Start a local Fn server and completer server
+#### Start a local Fn server and Fn Flow server
 
 In a terminal, start the functions server:
 ```bash
 $ fn start
 ```
-Similarly, start the Fn Flow completer server and point it at the functions server API URL:
+Similarly, start the Fn Flow server and point it at the functions server API URL:
 
 ```bash
 $ DOCKER_LOCALHOST=$(docker inspect --type container -f '{{.NetworkSettings.Gateway}}' functions)
@@ -50,8 +50,8 @@ $ docker run --rm  \
        -d \
        -e API_URL="http://$DOCKER_LOCALHOST:8080/r" \
        -e no_proxy=$DOCKER_LOCALHOST \
-       --name completer \
-       fnproject/completer:latest
+       --name flow-server \
+       fnproject/flow:latest
 ```
 
 ### Running Fn Flow Stages with the packaged machine definition
@@ -69,7 +69,7 @@ Add a route to the function
 ```bash
 $ fn routes create flow /stages
 ```
-Configure the function with the API URL of the Flow completer server
+Configure the function with the API URL of the Flow server
 ```bash
 $ fn apps config set flow COMPLETER_BASE_URL $DOCKER_LOCALHOST
 ```
